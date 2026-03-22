@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
-import IORedis from 'ioredis';
 import mongoose from 'mongoose';
 import { Assignment } from './models/Assignment';
 import { generateQuestionPaper } from './lib/ai';
@@ -13,12 +12,13 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/vedaai');
 
-// Create a minimal HTTP server for WebSocket in worker
+// Minimal HTTP server for WebSocket in worker
 const server = http.createServer();
 const wss = new WebSocketServer({ server });
 wsManager.init(wss);
 
-const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+// Use URL string directly — avoids ioredis version conflict with BullMQ's bundled ioredis
+const connection = { url: redisUrl, maxRetriesPerRequest: null as null };
 
 const worker = new Worker(
   'question-generation',
@@ -26,7 +26,6 @@ const worker = new Worker(
     const { assignmentId } = job.data;
     console.log(`Processing job ${job.id} for assignment ${assignmentId}`);
 
-    // Update status to processing
     await Assignment.findByIdAndUpdate(assignmentId, { jobStatus: 'processing' });
 
     wsManager.broadcast(assignmentId, {
@@ -37,13 +36,9 @@ const worker = new Worker(
       progress: 0,
     });
 
-    // Fetch assignment from DB
     const assignment = await Assignment.findById(assignmentId);
-    if (!assignment) {
-      throw new Error(`Assignment ${assignmentId} not found`);
-    }
+    if (!assignment) throw new Error(`Assignment ${assignmentId} not found`);
 
-    // Generate the paper
     const paper = await generateQuestionPaper(
       {
         title: assignment.title,
@@ -67,13 +62,11 @@ const worker = new Worker(
       }
     );
 
-    // Save generated paper
     await Assignment.findByIdAndUpdate(assignmentId, {
       jobStatus: 'completed',
       generatedPaper: paper,
     });
 
-    // Notify frontend
     wsManager.broadcast(assignmentId, {
       type: 'job_completed',
       assignmentId,
@@ -85,15 +78,10 @@ const worker = new Worker(
 
     return paper;
   },
-  {
-    connection,
-    concurrency: 3,
-  }
+  { connection, concurrency: 3 }
 );
 
-worker.on('completed', (job) => {
-  console.log(`Job ${job.id} completed`);
-});
+worker.on('completed', (job) => console.log(`Job ${job.id} completed`));
 
 worker.on('failed', async (job, err) => {
   console.error(`Job ${job?.id} failed:`, err);

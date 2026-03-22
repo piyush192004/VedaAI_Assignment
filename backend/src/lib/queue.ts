@@ -1,14 +1,13 @@
-import { Queue, Worker, QueueEvents } from 'bullmq';
-import IORedis from 'ioredis';
+import { Queue, QueueEvents } from 'bullmq';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-export const redisConnection = new IORedis(redisUrl, {
-  maxRetriesPerRequest: null,
-});
+// Parse Redis URL into connection options for BullMQ
+// BullMQ uses its own bundled ioredis — pass URL string directly
+const connection = { url: redisUrl, maxRetriesPerRequest: null as null };
 
 export const questionGenerationQueue = new Queue('question-generation', {
-  connection: redisConnection,
+  connection,
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 2000 },
@@ -18,7 +17,7 @@ export const questionGenerationQueue = new Queue('question-generation', {
 });
 
 export const queueEvents = new QueueEvents('question-generation', {
-  connection: new IORedis(redisUrl, { maxRetriesPerRequest: null }),
+  connection: { url: redisUrl, maxRetriesPerRequest: null as null },
 });
 
 export async function addGenerationJob(assignmentId: string, data: unknown) {
