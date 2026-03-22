@@ -122,7 +122,11 @@ export default function ToolkitPage() {
           canvas.height = viewport.height;
           const ctx = canvas.getContext("2d")!;
 
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          await page.render({
+            canvasContext: ctx,
+            viewport,
+            canvas,
+          }).promise;
 
           const dataUrl = canvas.toDataURL("image/png");
           const result = await Tesseract.recognize(dataUrl, "eng", {
