@@ -16,6 +16,7 @@ import {
   Lightbulb,
   AlertCircle,
 } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/runtime";
 
 interface AnswerKeyItem {
   questionNumber: string;
@@ -33,7 +34,7 @@ interface AnswerKey {
 }
 type Status = "idle" | "reading" | "generating" | "done" | "error";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = getApiBaseUrl();
 
 export default function ToolkitPage() {
   const [file, setFile] = useState<File | null>(null);

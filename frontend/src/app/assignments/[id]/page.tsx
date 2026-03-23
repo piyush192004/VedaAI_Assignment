@@ -11,6 +11,7 @@ import { Assignment, WSMessage } from '@/types';
 import AppShell from '@/components/AppShell';
 import QuestionPaper from '@/components/QuestionPaper';
 import { format } from 'date-fns';
+import { getAssignmentWebSocketUrl } from '@/lib/runtime';
 
 type PageStatus = 'loading' | 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -42,7 +43,12 @@ export default function AssignmentDetailPage() {
 
   // WebSocket for real-time updates
   useEffect(() => {
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000/ws'}?assignmentId=${id}`;
+    const wsUrl = getAssignmentWebSocketUrl(id);
+    if (!wsUrl) {
+      setMessage('Missing WebSocket configuration.');
+      return;
+    }
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

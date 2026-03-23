@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAssignmentStore } from '@/store/assignmentStore';
 import { WSMessage } from '@/types';
+import { getAssignmentWebSocketUrl } from '@/lib/runtime';
 
 export function useWebSocket(assignmentId?: string) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -10,8 +11,11 @@ export function useWebSocket(assignmentId?: string) {
   const { setWsConnected, setWsRef, handleWSMessage } = useAssignmentStore();
 
   const connect = useCallback(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000/ws';
-    const url = assignmentId ? `${wsUrl}?assignmentId=${assignmentId}` : wsUrl;
+    const url = getAssignmentWebSocketUrl(assignmentId);
+    if (!url) {
+      setWsConnected(false);
+      return;
+    }
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
