@@ -22,8 +22,6 @@ export default function GenerationStatus() {
         )}>
           {isFailed ? (
             <XCircle className="w-5 h-5 text-rose-400" />
-          ) : generationStatus === 'completed' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           ) : (
             <Zap className="w-5 h-5 text-amber-400 animate-pulse" />
           )}
