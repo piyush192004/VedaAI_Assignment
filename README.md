@@ -13,32 +13,29 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                         FRONTEND (Next.js 16)                    │
 │  ┌──────────┐  ┌────────────┐  ┌──────────┐  ┌──────────────┐    │
-│  │  Auth    │  │ Assignment │  │ Question │  │  AI Toolkit  │    │
+│  │ Dashboard│  │ Assignment │  │ Question │  │  AI Toolkit  │    │
 │  │  Pages   │  │   Form     │  │  Paper   │  │  (Ans. Key)  │    │
 │  └──────────┘  └────────────┘  └──────────┘  └──────────────┘    │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │  Zustand Stores: authStore · assignmentStore · profileStore│  │
+│  │  Zustand Stores: assignmentStore · profileStore            │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │  ┌────────────────────┐    ┌───────────────────────────────┐     │
-│  │  WebSocket Client  │    │     Axios API Client (JWT)    │     │
+│  │  WebSocket Client  │    │        Axios API Client       │     │
 │  └────────────────────┘    └───────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────────┘
-                │  HTTP/REST + JWT         │  WebSocket (ws://)
+                │      HTTP/REST           │  WebSocket (ws://)
 ┌──────────────────────────────────────────────────────────────────┐
 │                    BACKEND (Node.js + Express + TS)              │
-│  POST /api/auth/signup      POST /api/auth/login                 │
 │  GET  /api/assignments      POST /api/assignments                │
 │  GET  /api/assignments/:id  POST /api/assignments/:id/regenerate │
 │  POST /api/toolkit/answer-key                                    │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │         JWT Auth Middleware (requireAuth)                │    │
-│  └──────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────┘
         │                    │                    │
 ┌───────────────┐   ┌─────────────────┐   ┌──────────────────┐
 │  MongoDB Atlas│   │  Redis Cloud    │   │   Groq AI        │
-│  - Users      │   │  - BullMQ jobs  │   │  llama-3.3-70b   │
-│  - Assignments│   │  - Job state    │   │  (JSON mode)     │
+│  - Assignments│   │  - BullMQ jobs  │   │  llama-3.3-70b   │
+│  - Generated  │   │  - Job state    │   │  (JSON mode)     │
+│  - Papers     │   │                 │   │                  │
 └───────────────┘   └─────────────────┘   └──────────────────┘
                             │
                 ┌────────────────────────┐
@@ -98,8 +95,8 @@ Frontend receives WS message → renders QuestionPaper component
 - ✅ **WebSocket real-time updates** — live progress with step indicators
 - ✅ **BullMQ background jobs** — async generation with retry logic
 - ✅ **Redis** — job queue state management
-- ✅ **MongoDB** — users + assignments + generated papers stored per-user
-- ✅ **Zustand state management** — authStore, assignmentStore, profileStore
+- ✅ **MongoDB** — assignments + generated papers persisted
+- ✅ **Zustand state management** — assignmentStore, profileStore
 
 ### Output Page
 
@@ -113,7 +110,6 @@ Frontend receives WS message → renders QuestionPaper component
 ### Bonus
 
 - ✅ **PDF Export** — proper multi-page A4 formatting
-- ✅ **Authentication** — JWT signup/login, per-user data isolation
 - ✅ **Mobile Responsive** — bottom nav, hamburger sidebar, adaptive layouts
 - ✅ **AI Teacher's Toolkit** — Answer Key Generator (PDF upload → OCR → Groq)
 - ✅ **Notifications** — real-time bell with paper_created / answer_key_created events
@@ -132,15 +128,12 @@ vedaai/
 │   │   ├── worker.ts         # BullMQ worker process
 │   │   ├── lib/
 │   │   │   ├── ai.ts         # Groq prompt builder + parser
-│   │   │   ├── auth.ts       # JWT sign/verify + requireAuth middleware
 │   │   │   ├── queue.ts      # BullMQ + Redis setup
 │   │   │   └── websocket.ts  # WS manager (per-assignment rooms)
 │   │   ├── models/
-│   │   │   ├── User.ts       # User schema + bcrypt
-│   │   │   └── Assignment.ts # Assignment schema (userId scoped)
+│   │   │   └── Assignment.ts # Assignment schema
 │   │   ├── routes/
-│   │   │   ├── auth.ts       # /signup /login /me /profile
-│   │   │   ├── assignments.ts# CRUD + regenerate (auth protected)
+│   │   │   ├── assignments.ts# CRUD + regenerate
 │   │   │   └── toolkit.ts    # Answer key generation
 │   │   └── types/index.ts
 │   ├── .env.example
@@ -150,8 +143,6 @@ vedaai/
 └── frontend/
     ├── src/
     │   ├── app/              # Next.js App Router pages
-    │   │   ├── login/        # Login page
-    │   │   ├── signup/       # 2-step signup
     │   │   ├── assignments/  # List + detail pages
     │   │   ├── create/       # Assignment creation form
     │   │   ├── toolkit/      # AI tools (answer key)
@@ -162,14 +153,12 @@ vedaai/
     │   │   ├── Sidebar.tsx       # Desktop nav + school card
     │   │   ├── TopBar.tsx        # Header + notifications + profile
     │   │   ├── MobileNav.tsx     # Bottom tab navigation
-    │   │   ├── AuthGuard.tsx     # Route protection
     │   │   ├── CreateAssignmentForm.tsx
     │   │   └── QuestionPaper.tsx # Formatted paper + PDF export
     │   ├── store/
-    │   │   ├── authStore.ts      # JWT + user (persisted)
     │   │   ├── assignmentStore.ts# WS message handler
     │   │   └── profileStore.ts   # Profile + notifications (persisted)
-    │   ├── lib/api.ts            # Axios + auto JWT injection
+    │   ├── lib/api.ts            # Axios API client
     │   ├── hooks/useWebSocket.ts
     │   └── types/index.ts
     ├── .env.example
@@ -196,8 +185,6 @@ cp .env.example .env
 # MONGODB_URI=mongodb+srv://...
 # REDIS_URL=redis://default:...@...
 # GROQ_API_KEY=gsk_...
-# JWT_SECRET=your-secret-key
-
 npm install
 npm run dev        # Terminal 1 — API server on :4000
 npm run worker     # Terminal 2 — BullMQ worker
@@ -224,7 +211,6 @@ PORT=4000
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/vedaai
 REDIS_URL=redis://default:pass@host:port
 GROQ_API_KEY=gsk_...
-JWT_SECRET=change-this-in-production
 FRONTEND_URL=http://localhost:3000
 ```
 
@@ -253,19 +239,15 @@ No raw LLM output is ever rendered — all content goes through the typed `Gener
 
 ## API Reference
 
-| Method | Endpoint                        | Auth | Description                  |
-| ------ | ------------------------------- | ---- | ---------------------------- |
-| POST   | /api/auth/signup                | ❌   | Create account               |
-| POST   | /api/auth/login                 | ❌   | Get JWT token                |
-| GET    | /api/auth/me                    | ✅   | Get current user             |
-| PUT    | /api/auth/profile               | ✅   | Update profile               |
-| GET    | /api/assignments                | ✅   | List user's assignments      |
-| POST   | /api/assignments                | ✅   | Create + queue generation    |
-| GET    | /api/assignments/:id            | ✅   | Get assignment + paper       |
-| POST   | /api/assignments/:id/regenerate | ✅   | Re-queue generation          |
-| DELETE | /api/assignments/:id            | ✅   | Delete assignment            |
-| POST   | /api/toolkit/answer-key         | ✅   | Generate answer key from PDF |
-| POST   | /api/toolkit/answer-key-text    | ✅   | Generate from extracted text |
+| Method | Endpoint                        | Description                  |
+| ------ | ------------------------------- | ---------------------------- |
+| GET    | /api/assignments                | List assignments             |
+| POST   | /api/assignments                | Create + queue generation    |
+| GET    | /api/assignments/:id            | Get assignment + paper       |
+| POST   | /api/assignments/:id/regenerate | Re-queue generation          |
+| DELETE | /api/assignments/:id            | Delete assignment            |
+| POST   | /api/toolkit/answer-key         | Generate answer key from PDF |
+| POST   | /api/toolkit/answer-key-text    | Generate from extracted text |
 
 ---
 
