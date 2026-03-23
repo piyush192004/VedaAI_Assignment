@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, ChevronDown, ArrowLeft, LayoutGrid, Check, Trash2, User, LogOut, Menu } from 'lucide-react';
+import { Bell, ChevronDown, ArrowLeft, LayoutGrid, Check, Trash2, User, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useProfileStore } from '@/store/profileStore';
-import { useAuthStore } from '@/store/authStore';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Props {
@@ -28,11 +27,10 @@ export default function TopBar({ title = 'Assignment', showBack, backHref = '/as
   const router = useRouter();
 
   const { profile, notifications, markAllRead, markRead, clearNotifications, unreadCount } = useProfileStore();
-  const { user, logout } = useAuthStore();
   const unread = mounted ? unreadCount() : 0;
 
-  const displayName = user?.name || profile.name || 'Teacher';
-  const displayAvatar = user?.avatar || profile.avatar || '';
+  const displayName = profile.name || 'Teacher';
+  const displayAvatar = profile.avatar || '';
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   useEffect(() => { setMounted(true); }, []);
@@ -45,8 +43,6 @@ export default function TopBar({ title = 'Assignment', showBack, backHref = '/as
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const handleLogout = () => { logout(); router.push('/login'); };
 
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 flex-shrink-0 z-10">
@@ -141,7 +137,7 @@ export default function TopBar({ title = 'Assignment', showBack, backHref = '/as
             <div className="absolute right-0 top-11 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
               <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                 <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email || profile.email}</p>
+                <p className="text-xs text-gray-500 truncate">{profile.email}</p>
               </div>
               <Link href="/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                 <User className="w-3.5 h-3.5 text-gray-400" />Edit Profile
@@ -149,9 +145,6 @@ export default function TopBar({ title = 'Assignment', showBack, backHref = '/as
               <Link href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100">
                 Settings
               </Link>
-              <button onClick={handleLogout} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
-                <LogOut className="w-3.5 h-3.5" />Sign Out
-              </button>
             </div>
           )}
         </div>

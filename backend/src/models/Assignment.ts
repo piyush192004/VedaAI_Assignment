@@ -2,7 +2,6 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { GeneratedPaper, JobStatus } from '../types';
 
 export interface IAssignment extends Document {
-  userId: mongoose.Types.ObjectId;
   title: string;
   subject: string;
   gradeLevel: string;
@@ -21,7 +20,6 @@ export interface IAssignment extends Document {
 
 const AssignmentSchema = new Schema<IAssignment>(
   {
-    userId:     { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title:      { type: String, required: true, trim: true },
     subject:    { type: String, required: true, trim: true },
     gradeLevel: { type: String, required: true },
