@@ -6,6 +6,45 @@ const API_URL = getApiBaseUrl();
 
 const api = axios.create({ baseURL: API_URL });
 
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('vedaai-auth');
+      if (raw) {
+        const { state } = JSON.parse(raw);
+        if (state?.token) {
+          config.headers.Authorization = `Bearer ${state.token}`;
+        }
+      }
+    } catch {}
+  }
+  return config;
+});
+
+export async function apiSignup(data: {
+  name: string;
+  email: string;
+  password: string;
+  schoolName?: string;
+  schoolLocation?: string;
+  designation?: string;
+  className?: string;
+  mobile?: string;
+}) {
+  const res = await api.post('/api/auth/signup', data);
+  return res.data.data;
+}
+
+export async function apiLogin(email: string, password: string) {
+  const res = await api.post('/api/auth/login', { email, password });
+  return res.data.data;
+}
+
+export async function apiUpdateProfile(data: Record<string, string>) {
+  const res = await api.put('/api/auth/profile', data);
+  return res.data.data;
+}
+
 export async function createAssignment(formData: AssignmentFormData): Promise<{ assignmentId: string; jobId: string; status: string }> {
   const fd = new FormData();
   fd.append('title', formData.title);

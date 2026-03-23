@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { Worker, Job } from "bullmq";
 import assignmentRoutes from "./routes/assignments";
 import toolkitRoutes from "./routes/toolkit";
+import authRoutes from "./routes/auth";
 import { wsManager } from "./lib/websocket";
 import { Assignment } from "./models/Assignment";
 import { generateQuestionPaper } from "./lib/ai";
@@ -19,12 +20,13 @@ app.use(
   cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+app.use("/api/auth", authRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/toolkit", toolkitRoutes);
 app.get("/health", (req, res) =>

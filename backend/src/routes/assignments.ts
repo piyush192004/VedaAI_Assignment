@@ -5,8 +5,11 @@ import fs from 'fs';
 import { Assignment } from '../models/Assignment';
 import { addGenerationJob } from '../lib/queue';
 import { wsManager } from '../lib/websocket';
+import { requireAuth } from '../lib/auth';
 
 const router = Router();
+
+router.use(requireAuth);
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -24,7 +27,7 @@ const upload = multer({
 // GET /api/assignments
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const assignments = await Assignment.find()
+    const assignments = await Assignment.find({ userId: req.user!.userId })
       .select('-generatedPaper -fileContent')
       .sort({ createdAt: -1 })
       .limit(50);
@@ -37,7 +40,7 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/assignments/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findOne({ _id: req.params.id, userId: req.user!.userId });
     if (!assignment) return res.status(404).json({ success: false, error: 'Assignment not found' });
     res.json({ success: true, data: assignment });
   } catch (err: unknown) {
@@ -69,6 +72,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     }
 
     const assignment = await Assignment.create({
+      userId: req.user!.userId,
       title: title.trim(),
       subject: subject.trim(),
       gradeLevel,
@@ -100,7 +104,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
 // POST /api/assignments/:id/regenerate
 router.post('/:id/regenerate', async (req: Request, res: Response) => {
   try {
-    const assignment = await Assignment.findById(req.params.id);
+    const assignment = await Assignment.findOne({ _id: req.params.id, userId: req.user!.userId });
     if (!assignment) return res.status(404).json({ success: false, error: 'Assignment not found' });
 
     await Assignment.findByIdAndUpdate(req.params.id, { jobStatus: 'pending', generatedPaper: null });
@@ -117,7 +121,7 @@ router.post('/:id/regenerate', async (req: Request, res: Response) => {
 // DELETE /api/assignments/:id
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const result = await Assignment.findByIdAndDelete(req.params.id);
+    const result = await Assignment.findOneAndDelete({ _id: req.params.id, userId: req.user!.userId });
     if (!result) return res.status(404).json({ success: false, error: 'Assignment not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (err: unknown) {

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutGrid, Users, FileText, Lightbulb, BookOpen, Settings, Plus, X } from 'lucide-react';
 import { useProfileStore } from '@/store/profileStore';
+import { useAuthStore } from '@/store/authStore';
 
 const NAV = [
   { href: '/',            icon: LayoutGrid, label: 'Home',                soon: false },
@@ -18,11 +19,12 @@ interface Props { onClose?: () => void; }
 export default function Sidebar({ onClose }: Props) {
   const pathname = usePathname();
   const profile = useProfileStore((s) => s.profile);
+  const user = useAuthStore((s) => s.user);
 
-  const schoolName = profile.schoolName || 'Your School';
-  const schoolLocation = profile.schoolLocation || 'Location';
-  const avatar = profile.avatar || '';
-  const name = profile.name || 'Teacher';
+  const schoolName = user?.schoolName || profile.schoolName || 'Your School';
+  const schoolLocation = user?.schoolLocation || profile.schoolLocation || 'Location';
+  const avatar = user?.avatar || profile.avatar || '';
+  const name = user?.name || profile.name || 'Teacher';
 
   return (
     <aside className="h-full w-[240px] bg-white flex flex-col border-r border-gray-100 fixed md:fixed left-0 top-0 z-20" style={{ boxShadow: '2px 0 8px rgba(0,0,0,0.04)' }}>

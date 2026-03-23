@@ -2,13 +2,17 @@
 
 import { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
+import { apiUpdateProfile } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
 import { Save, User, Mail, Phone, School, BookOpen, Briefcase, CheckCircle2, Camera, X, Upload } from 'lucide-react';
 
 export default function ProfilePage() {
   const { profile, setProfile } = useProfileStore();
+  const updateUser = useAuthStore((state) => state.updateUser);
   const [form, setForm] = useState({ ...profile });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>(profile.avatar || '');
   const [isDraggingAvatar, setIsDraggingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -27,10 +31,29 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    setProfile({ ...form, avatar: avatarPreview });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiUpdateProfile({ ...form, avatar: avatarPreview });
+      const nextProfile = {
+        name: updated.name,
+        email: updated.email,
+        mobile: updated.mobile || '',
+        schoolName: updated.schoolName || '',
+        schoolLocation: updated.schoolLocation || '',
+        designation: updated.designation || '',
+        className: updated.className || '',
+        avatar: updated.avatar || '',
+      };
+      setProfile(nextProfile);
+      updateUser(nextProfile);
+      setForm(nextProfile);
+      setAvatarPreview(nextProfile.avatar);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeAvatar = () => {
@@ -165,11 +188,12 @@ export default function ProfilePage() {
             <p className="text-xs text-gray-400">Changes reflect instantly across the app.</p>
             <button
               onClick={handleSave}
+              disabled={saving}
               className={`flex items-center gap-2 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all ${
                 saved ? 'bg-emerald-500 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'
               }`}
             >
-              {saved ? <><CheckCircle2 className="w-4 h-4" />Saved!</> : <><Save className="w-4 h-4" />Save Changes</>}
+              {saved ? <><CheckCircle2 className="w-4 h-4" />Saved!</> : <><Save className="w-4 h-4" />{saving ? 'Saving...' : 'Save Changes'}</>}
             </button>
           </div>
         </div>
